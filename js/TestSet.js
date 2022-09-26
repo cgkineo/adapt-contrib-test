@@ -44,13 +44,10 @@ export default class TestSet extends ScoringSet {
       });
     };
     this.model.set('_assessment', {
-      _isResetOnRevisit: this.resetConfig._failedConfig._isResetOnRevisit
+      _isResetOnRevisit: this.resetConfig.failedConfig._isResetOnRevisit
     });
   }
 
-  /**
-   * @todo Do we need all the values as in previous assessment? Do we even need a state as all these can be retrieved individually as required?
-   */
   get compatibilityState() {
     const state = {
       id: this.config._id,
@@ -89,8 +86,8 @@ export default class TestSet extends ScoringSet {
    * @extends
    */
   register() {
-    super.register(this);
     Adapt.trigger('assessments:register', this.compatibilityState, this.model);
+    super.register(this);
   }
 
   /**
@@ -154,6 +151,7 @@ export default class TestSet extends ScoringSet {
     }
 
     Adapt.trigger('assessments:restored', this.compatibilityState, this.model);
+    Adapt.trigger('test:restored', this);
   }
 
   /**
@@ -179,13 +177,14 @@ export default class TestSet extends ScoringSet {
    */
   async reset() {
     Adapt.trigger('assessments:preReset', this.compatibilityState, this.model);
+    Adapt.trigger('test:preReset', this);
     this.scoringSets.forEach(model => model.reset(this.resetConfig._scoringType, true));
     this.nonScoringSets.forEach(model => model.reset(this.resetConfig._nonScoringType, true));
     this._attempt = new Attempt(this);
     this._hasReset = true;
     await Adapt.deferUntilCompletionChecked();
     Adapt.trigger('assessments:reset', this.compatibilityState, this.model);
-
+    Adapt.trigger('test:reset', this);
     if (this.canReload) {
       this._reload();
     } else if (this.resetConfig._scrollTo) {
@@ -194,6 +193,7 @@ export default class TestSet extends ScoringSet {
     }
     _.defer(() => {
       Adapt.trigger('assessments:postReset', this.compatibilityState, this.model);
+      Adapt.trigger('test:postReset', this);
     });
   }
 
@@ -535,6 +535,7 @@ export default class TestSet extends ScoringSet {
     }
 
     Adapt.trigger('assessments:complete', this.compatibilityState, this.model);
+    Adapt.trigger('test:complete', this);
     Logging.debug(`${this.id} assessment completed`);
   }
 
@@ -544,7 +545,7 @@ export default class TestSet extends ScoringSet {
    * @property {TestSet}
    */
   onPassed() {
-    // Adapt.trigger('assessments:pass', this);
+    Adapt.trigger('test:pass', this);
     Logging.debug(`${this.id} assessment passed`);
   }
 

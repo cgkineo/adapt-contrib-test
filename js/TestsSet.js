@@ -36,8 +36,32 @@ export default class TestsSet extends ScoringSet {
       get: id => {
         const set = this.getById(id) || this.getByModelId(id);
         return set?.model;
+      },
+      getState: () => {
+        return this.compatibilityState;
       }
     };
+  }
+
+  get compatibilityState() {
+    const state = {
+      isComplete: this.isComplete,
+      isPercentageBased: this.passmark.isScaled,
+      isPass: this.isPassed,
+      maxScore: this.maxScore,
+      minScore: this.minScore,
+      score: this.score,
+      scoreToPass: this.passmark.score,
+      scoreAsPercent: this.scaledScore,
+      correctCount: this.correctness,
+      correctAsPercent: this.scaledCorrectness,
+      correctToPass: this.passmark.correctness,
+      questionCount: this.questions.length,
+      assessmentsComplete: this.models,
+      assessments: this.models,
+      canRetry: null
+    };
+    return state;
   }
 
   /**
@@ -49,15 +73,12 @@ export default class TestsSet extends ScoringSet {
     this._passmark = new Passmark(this._config._passmark);
   }
 
-  get compatibilityState() {
-    return {};
-  }
-
   /**
    * @override
    */
   restore() {
     Adapt.trigger('assessment:restored', this.compatibilityState);
+    Adapt.trigger('tests:restored', this);
   }
 
   /**
@@ -65,7 +86,6 @@ export default class TestsSet extends ScoringSet {
    */
   update() {
     Logging.debug(`${this.id} minScore: ${this.minScore}, maxScore: ${this.maxScore}`);
-    // Logging.debug(`${this.id} scores: ${JSON.stringify(this.scores)}`);
     Logging.debug(`${this.id} score: ${this.score}, scaledScore: ${this.scaledScore}`);
     Logging.debug(`${this.id} isComplete: ${this.isComplete}, isPassed: ${this.isPassed}`);
     super.update();
@@ -266,6 +286,7 @@ export default class TestsSet extends ScoringSet {
    */
   onCompleted() {
     Adapt.trigger('assessment:complete', this.compatibilityState);
+    Adapt.trigger('tests:complete', this);
   }
 
   /**
@@ -274,7 +295,7 @@ export default class TestsSet extends ScoringSet {
    * @property {AssessmentsSet}
    */
   onPassed() {
-    // Adapt.trigger('assessments:pass', this);
+    Adapt.trigger('tests:pass', this);
     Logging.debug('assessments passed');
   }
 
