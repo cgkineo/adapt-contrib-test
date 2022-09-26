@@ -5,12 +5,10 @@ export default class Reset {
     this._scrollTo = config._scrollTo ?? true;
     this._scoringType = config._scoringType ?? 'hard';
     this._nonScoringType = config._nonScoringType ?? 'soft';
-
     this._failedConfig = Object.assign({
       _isResetOnRevisit: true,
       _canReset: true
     }, config?._failed);
-
     this._passedConfig = Object.assign({
       _isResetOnRevisit: true,
       _canReset: true

@@ -1,4 +1,5 @@
 import Adapt from 'core/js/adapt';
+import router from 'core/js/router';
 import Logging from 'core/js/logging';
 import OfflineStorage from 'core/js/offlineStorage';
 import Passmark from './Passmark';
@@ -113,9 +114,7 @@ export default class TestSet extends ScoringSet {
   async _initQuestions() {
     // @todo: probably not necessary to await here as doesn't matter if gets applied to all questions before banking/randomisation modifiers
     // await Data.whenReady();
-
     const isMarkingEnabled = this.marking.isEnabled && !(this.marking.isSuppressed && this.attempts.hasRemaining);
-
     this.questions.forEach(model => {
       model.set({
         _canShowFeedback: this._config?._questions?._canShowFeedback ?? false,
@@ -143,13 +142,11 @@ export default class TestSet extends ScoringSet {
    */
   restore() {
     const storedData = OfflineStorage.get(this.saveStateName)?.[this.id];
-
     if (storedData) {
       const data = OfflineStorage.deserialize(storedData);
       this.attempts.restore(data[0]);
       this.attempt.restore(data[1]);
     }
-
     Adapt.trigger('assessments:restored', this.compatibilityState, this.model);
     Adapt.trigger('test:restored', this);
   }
@@ -159,7 +156,6 @@ export default class TestSet extends ScoringSet {
    */
   update() {
     Logging.debug(`${this.id} minScore: ${this.minScore}, maxScore: ${this.maxScore}`);
-    // Logging.debug(`${this.id} scores: ${JSON.stringify(this.scores)}`);
     Logging.debug(`${this.id} score: ${this.score}, scaledScore: ${this.scaledScore}`);
     Logging.debug(`${this.id} isAttemptComplete: ${this.isAttemptComplete}, isComplete: ${this.isComplete}, isPassed: ${this.isPassed}`);
     if (this.attempt) this.attempt.update();
@@ -189,7 +185,7 @@ export default class TestSet extends ScoringSet {
       this._reload();
     } else if (this.resetConfig._scrollTo) {
       this.attempt.start();
-      Adapt.navigateToElement(this.model.get('_id'));
+      router.navigateToElement(this.model.get('_id'));
     }
     _.defer(() => {
       Adapt.trigger('assessments:postReset', this.compatibilityState, this.model);
@@ -241,7 +237,6 @@ export default class TestSet extends ScoringSet {
    */
   get components() {
     return this.models.reduce((models, model) => models.concat(model.getChildren().toArray()), []);
-    // return this.model.findDescendantModels('component').filter(model => model.get('_isAvailable'));
   }
 
   /**
@@ -250,8 +245,6 @@ export default class TestSet extends ScoringSet {
    */
   get questions() {
     return this.components.filter(model => model.get('_isQuestionType'));
-    // return this.components.filter(model => model.getTypeGroup('question'));
-    // return this.model.findDescendantModels('question').filter(model => model.get('_isAvailable'));
   }
 
   /**
@@ -281,10 +274,8 @@ export default class TestSet extends ScoringSet {
   get minScore() {
     if (this.isComplete && !this.attempt?.isInSession) {
       return this.attempts.last.minScore;
-    } else {
-      return this.scoringSets.reduce((score, set) => score + set.minScore, 0);
     }
-    // return 0;
+    return this.scoringSets.reduce((score, set) => score + set.minScore, 0);
   }
 
   /**
@@ -293,9 +284,8 @@ export default class TestSet extends ScoringSet {
   get maxScore() {
     if (this.isComplete && !this.attempt?.isInSession) {
       return this.attempts.last.maxScore;
-    } else {
-      return this.scoringSets.reduce((score, set) => score + set.maxScore, 0);
     }
+    return this.scoringSets.reduce((score, set) => score + set.maxScore, 0);
   }
 
   /**
@@ -304,9 +294,8 @@ export default class TestSet extends ScoringSet {
   get score() {
     if (this.isComplete && !this.attempt?.isInSession) {
       return this.attempts.last.score;
-    } else {
-      return this.scoringSets.reduce((score, set) => score + set.score, 0);
     }
+    return this.scoringSets.reduce((score, set) => score + set.score, 0);
   }
 
   /**
@@ -316,9 +305,8 @@ export default class TestSet extends ScoringSet {
   get correctness() {
     if (this.isComplete && !this.attempt?.isInSession) {
       return this.attempts.last.correctness;
-    } else {
-      return this.questions.reduce((count, model) => count + (model.get('_isCorrect') ? 1 : 0), 0);
     }
+    return this.questions.reduce((count, model) => count + (model.get('_isCorrect') ? 1 : 0), 0);
   }
 
   /**
@@ -508,7 +496,6 @@ export default class TestSet extends ScoringSet {
     if (!(Adapt.tests.getModelHasTest(model))) return;
     if (this.shouldResetOnRevisit) await this.reset();
     this._hasReset = false;
-
     if (!this.isAttemptComplete) {
       this.attempt.start();
       this._saveState();
@@ -527,13 +514,11 @@ export default class TestSet extends ScoringSet {
       this.attempts.record(this.attempt);
       this._saveState();
     }
-
     // @todo: do we need a defer here as before?
     if (this.marking.isEnabled && this.marking.isSuppressed && !this.attempts.hasRemaining) {
       this._initQuestions();
       this._refreshQuestions();
     }
-
     Adapt.trigger('assessments:complete', this.compatibilityState, this.model);
     Adapt.trigger('test:complete', this);
     Logging.debug(`${this.id} assessment completed`);
