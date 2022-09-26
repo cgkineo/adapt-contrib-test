@@ -1,0 +1,47 @@
+// course.json
+"_tests": {
+  "_passmark": {
+    "_isEnabled": true,
+    "_requirePassedSubsets": true,
+    "_score": 75,
+    "_correct": 50,
+    "_isScaled": true
+  }
+}
+
+// articles.json
+"_test": {
+  "_isEnabled": true,
+  "_id": "test-05",
+  "_isScoreIncluded": true,
+  "_reset": {
+    "_reloadPage": true,
+    "_scrollTo": false,
+    "_scoringType": "hard",
+    "_nonScoringType": "soft",
+    "_failed": {
+      "_canReset": true,
+      "_isResetOnRevisit": true
+    },
+    "_passed": {
+      "_canReset": false,
+      "_isResetOnRevisit": false
+    }
+  },
+  "_passmark": {
+    "_isEnabled": true,
+    "_score": 75,
+    "_correct": 75,
+    "_isScaled": true
+  },
+  "_attempts": -1,
+  "_questions": {
+    "_canShowFeedback": false,
+    "_canShowMarking": true,
+    "_canShowModelAnswer": false
+  },
+  "_suppressMarking": true
+}
+
+// components - not yet included
+"displayTitle": "Question {{questionNumber}} of {{questionCount}}"

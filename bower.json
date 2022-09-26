@@ -1,0 +1,17 @@
+{
+  "name": "adapt-contrib-test",
+  "version": "5.0.0-dev",
+  "framework": ">=5.20-dev",
+  "homepage": "https://github.com/cgkineo/adapt-contrib-test",
+  "issues": "https://github.com/cgkineo/adapt-contrib-test/issues/new",
+  "extension" : "test",
+  "displayName" : "Test",
+  "description": "An extension which attaches to an article object to group various question components and provide a score with feedback",
+  "main": "/js/adapt-contrib-test.js",
+  "keywords": [
+    "adapt-plugin",
+    "adapt-extension"
+  ],
+  "license": "GPL-3.0",
+  "targetAttribute": "_test"
+}
