@@ -3,7 +3,7 @@ import Attempt from './Attempt';
 export default class Attempts {
 
   constructor(limit = 1) {
-    this._limit = limit;
+    this._limit = limit === 'infinite' ? -1 : limit;
     this._used = 0;
     this._history = [];
   }
@@ -39,7 +39,7 @@ export default class Attempts {
 
   /**
    * Reset attempts
-   * @todo Should `used` and/or `_history` ever be reset? Not currently called in `AssessmentSet`
+   * @todo Should `used` and/or `_history` ever be reset? Not currently called in `TestSet`
    */
   /*
   reset() {

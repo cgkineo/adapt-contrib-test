@@ -1,15 +1,16 @@
 import Adapt from 'core/js/adapt';
 import Logging from 'core/js/logging';
 import OfflineStorage from 'core/js/offlineStorage';
-import ScoringSet from 'core/js/ScoringSet';
 import Passmark from './Passmark';
 import Attempts from './Attempts';
 import Attempt from './Attempt';
 import Marking from './Marking';
 import Reset from './Reset';
+import ScoringSet from 'extensions/adapt-contrib-scoring/js/ScoringSet';
 import {
   getScaledScoreFromMinMax
-} from 'extensions/adapt-contrib-scoring/js/scoring';
+} from 'extensions/adapt-contrib-scoring/js/adapt-contrib-scoring';
+import _ from 'underscore';
 
 export default class TestSet extends ScoringSet {
 
@@ -19,6 +20,7 @@ export default class TestSet extends ScoringSet {
     this._initQuestions();
     this._hasReset = false;
 
+    this.setupBackwardsCompatility();
     super.initialize({
       ...options,
       _id: this._config._id,
@@ -26,12 +28,69 @@ export default class TestSet extends ScoringSet {
     }, subsetParent);
   }
 
+  setupBackwardsCompatility() {
+    this.model.getState = () => {
+      return this.compatibilityState;
+    };
+    this.model.canResetInPage = () => {
+      return this.canReset && this.canReload;
+    };
+    const originalReset = this.model.reset;
+    this.model.reset = (force, done) => {
+      if (force === false) return;
+      this.reset().then(() => {
+        typeof done === 'function' && done(true);
+        originalReset.call(this.model, force);
+      });
+    };
+    this.model.set('_assessment', {
+      _isResetOnRevisit: this.resetConfig._failedConfig._isResetOnRevisit
+    });
+  }
+
+  /**
+   * @todo Do we need all the values as in previous assessment? Do we even need a state as all these can be retrieved individually as required?
+   */
+  get compatibilityState() {
+    const state = {
+      id: this.config._id,
+      type: 'article-assessment',
+      pageId: this.model.getParent().get('_id'),
+      articleId: this.model.get('_id'),
+      isEnabled: this.config._isEnabled,
+      isComplete: this.isComplete,
+      isPercentageBased: this.passmark.isScaled,
+      scoreToPass: this.passmark.score,
+      score: this.score,
+      scoreAsPercent: this.scaledScore,
+      maxScore: this.minScore,
+      minScore: this.maxScore,
+      correctCount: this.correctness,
+      correctAsPercent: this.scaledCorrectness,
+      correctToPass: this.passmark.correctness,
+      questionCount: this.models.length,
+      isPass: this.isPassed,
+      includeInTotalScore: this.config._isScoreIncluded,
+      assessmentWeight: 1,
+      attempts: this.attempts.isInfinite ? 'infinite' : this.attempts.limit,
+      attemptsSpent: this.attempts.used,
+      attemptsLeft: this.attempts.isInfinite ? 'infinite' : this.attempts.remaining,
+      attemptInProgress: false,
+      lastAttemptScoreAsPercent: null,
+      questions: null,
+      resetType: this.resetConfig.scoringType,
+      allowResetIfPassed: this.resetConfig.passedConfig._isResetOnRevisit,
+      questionModels: new Backbone.Collection(this.questions)
+    };
+    return state;
+  }
+
   /**
    * @extends
-   * @todo Do we need an equivalent `Adapt.trigger('assessments:register', state, assessmentModel);` as before?
    */
   register() {
     super.register(this);
+    Adapt.trigger('assessments:register', this.compatibilityState, this.model);
   }
 
   /**
@@ -94,10 +153,7 @@ export default class TestSet extends ScoringSet {
       this.attempt.restore(data[1]);
     }
 
-    // @todo: previously `assessments:restored` so need to check which plugins use this
-    // @todo: do we need to send state when it can just be retrieved from assessment anyway?
-    Adapt.trigger('assessment:restored', this);
-    // Adapt.trigger('assessment:restored', this.state, this);
+    Adapt.trigger('assessments:restored', this.compatibilityState, this.model);
   }
 
   /**
@@ -122,13 +178,13 @@ export default class TestSet extends ScoringSet {
    * @returns {Promise}
    */
   async reset() {
+    Adapt.trigger('assessments:preReset', this.compatibilityState, this.model);
     this.scoringSets.forEach(model => model.reset(this.resetConfig._scoringType, true));
     this.nonScoringSets.forEach(model => model.reset(this.resetConfig._nonScoringType, true));
     this._attempt = new Attempt(this);
     this._hasReset = true;
     await Adapt.deferUntilCompletionChecked();
-    Adapt.trigger('assessment:reset', this);
-    // Adapt.trigger('assessments:reset', this.getState(), this);
+    Adapt.trigger('assessments:reset', this.compatibilityState, this.model);
 
     if (this.canReload) {
       this._reload();
@@ -136,6 +192,9 @@ export default class TestSet extends ScoringSet {
       this.attempt.start();
       Adapt.navigateToElement(this.model.get('_id'));
     }
+    _.defer(() => {
+      Adapt.trigger('assessments:postReset', this.compatibilityState, this.model);
+    });
   }
 
   /**
@@ -145,6 +204,10 @@ export default class TestSet extends ScoringSet {
   _reload() {
     const id = this.resetConfig._scrollTo ? this.model.get('_id') : Adapt.location._currentId;
     Backbone.history.navigate(`#/id/${id}`, { replace: true, trigger: true });
+  }
+
+  get config() {
+    return this._config;
   }
 
   /**
@@ -394,13 +457,6 @@ export default class TestSet extends ScoringSet {
   }
 
   /**
-   * @todo Do we need all the values as in previous assessment? Do we even need a state as all these can be retrieved individually as required?
-   */
-  get state() {
-    return {};
-  }
-
-  /**
    * Returns the state to save to offlineStorage
    * @todo component/block data required to restore which models were used across sessions when banking not used? Not needed for restoring correctness as before. Needed for role selectors?
    * @todo Have been cases where saving the scores etc was useful for amending issues with user data in xAPI.
@@ -457,9 +513,6 @@ export default class TestSet extends ScoringSet {
       this.attempt.start();
       this._saveState();
     }
-
-    // @todo: fire event for when assessment is to be rendered?
-    // Adapt.trigger('assessment:preRender', this);
   }
 
   /**
@@ -481,9 +534,7 @@ export default class TestSet extends ScoringSet {
       this._refreshQuestions();
     }
 
-    // @todo: do we need to send state when it can just be retrieved from assessment anyway?
-    Adapt.trigger('assessment:complete', this);
-    // Adapt.trigger('assessments:complete', this.getState(), this);
+    Adapt.trigger('assessments:complete', this.compatibilityState, this.model);
     Logging.debug(`${this.id} assessment completed`);
   }
 
@@ -493,7 +544,7 @@ export default class TestSet extends ScoringSet {
    * @property {TestSet}
    */
   onPassed() {
-    Adapt.trigger('assessment:pass', this);
+    // Adapt.trigger('assessments:pass', this);
     Logging.debug(`${this.id} assessment passed`);
   }
 

@@ -7,13 +7,23 @@ import {
   getSubsetsByType,
   getSubsetsByModelId,
   getScaledScoreFromMinMax
-} from 'extensions/adapt-contrib-scoring/js/scoring';
+} from 'extensions/adapt-contrib-scoring/js/adapt-contrib-scoring';
+
+const defaultConfig = {
+  _passmark: {
+    _isEnabled: true,
+    _requirePassedSubsets: true,
+    _score: 75,
+    _correct: 50,
+    _isScaled: true
+  }
+};
 
 export default class TestsSet extends ScoringSet {
 
   initialize(options = {}, subsetParent = null) {
     this._initConfig();
-
+    this.setupBackwardsCompatility();
     super.initialize({
       ...options,
       _id: 'tests',
@@ -21,22 +31,33 @@ export default class TestsSet extends ScoringSet {
     }, subsetParent);
   }
 
+  setupBackwardsCompatility() {
+    Adapt.assessment = {
+      get: id => {
+        const set = this.getById(id) || this.getByModelId(id);
+        return set?.model;
+      }
+    };
+  }
+
   /**
    * @private
    * @todo `_tests` rather than `assessment`
    */
   _initConfig() {
-    this._config = Adapt.course.get('_tests');
+    this._config = Adapt.course.get('_tests') ?? defaultConfig;
     this._passmark = new Passmark(this._config._passmark);
+  }
+
+  get compatibilityState() {
+    return {};
   }
 
   /**
    * @override
    */
   restore() {
-    // @todo: previously `assessment:restored` so need to check which plugins use this
-    Adapt.trigger('assessments:restored', this);
-    // Adapt.trigger('assessments:restored', this.state, this);
+    Adapt.trigger('assessment:restored', this.compatibilityState);
   }
 
   /**
@@ -56,7 +77,6 @@ export default class TestsSet extends ScoringSet {
    */
   reset() {
     this.subsets.forEach(set => set.reset());
-    // Adapt.trigger('assessments:reset', this);
   }
 
   /**
@@ -245,7 +265,7 @@ export default class TestsSet extends ScoringSet {
    * @property {AssessmentsSet}
    */
   onCompleted() {
-    Adapt.trigger('assessments:complete', this);
+    Adapt.trigger('assessment:complete', this.compatibilityState);
   }
 
   /**
@@ -254,7 +274,7 @@ export default class TestsSet extends ScoringSet {
    * @property {AssessmentsSet}
    */
   onPassed() {
-    Adapt.trigger('assessments:pass', this);
+    // Adapt.trigger('assessments:pass', this);
     Logging.debug('assessments passed');
   }
 

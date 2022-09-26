@@ -34,7 +34,7 @@
     "_correct": 75,
     "_isScaled": true
   },
-  "_attempts": -1,
+  "_attempts": "infinite",
   "_questions": {
     "_canShowFeedback": false,
     "_canShowMarking": true,
