@@ -52,9 +52,6 @@ export default class Attempts {
   restore(data) {
     // due to history entries, this has to be a nested array for serializer
     this._used = data[0][0];
-    this._hasPassed = data[0][1];
-    this._latestScore = data[0][2];
-    this._highestScore = data[0][3];
     this._history = data[1].map(state => {
       const attempt = new Attempt(this._test);
       attempt.restore(state);
