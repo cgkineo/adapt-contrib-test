@@ -3,8 +3,8 @@ export default class Reset {
   constructor(config = {}) {
     this._reloadPage = config._reloadPage ?? true;
     this._scrollTo = config._scrollTo ?? true;
-    this._scoringType = config._scoringType ?? 'hard';
-    this._nonScoringType = config._nonScoringType ?? 'soft';
+    this._questionsType = config._questionsType ?? 'hard';
+    this._presentationComponentsType = config._presentationComponentsType ?? 'soft';
     this._failedConfig = Object.assign({
       _isResetOnRevisit: true,
       _canReset: true
@@ -17,7 +17,7 @@ export default class Reset {
 
   /**
    * Returns whether to reload the page on reset
-   * @returns {Boolean}
+   * @returns {boolean}
    */
   get reloadPage() {
     return this._reloadPage;
@@ -25,26 +25,26 @@ export default class Reset {
 
   /**
    * Returns whether to scroll to the test on reset
-   * @returns {Boolean}
+   * @returns {boolean}
    */
   get scrollTo() {
     return this._scrollTo;
   }
 
   /**
-   * Returns the reset type for scoring models
-   * @returns {String}
+   * Returns the reset type for question models
+   * @returns {string}
    */
-  get scoringType() {
-    return this._scoringType;
+  get questionsType() {
+    return this._questionsType;
   }
 
   /**
-   * Returns the reset type for non-scoring models
-   * @returns {String}
+   * Returns the reset type for presentation component models
+   * @returns {string}
    */
-  get nonScoringType() {
-    return this._nonScoringType;
+  get presentationComponentsType() {
+    return this._presentationComponentsType;
   }
 
   /**

@@ -7,7 +7,7 @@ export default class Marking {
 
   /**
    * Returns whether marking is enabled
-   * @returns {Boolean}
+   * @returns {boolean}
    */
   get isEnabled() {
     return this._isEnabled;
@@ -15,7 +15,7 @@ export default class Marking {
 
   /**
    * Returns whether marking is suppressed
-   * @returns {Boolean}
+   * @returns {boolean}
    */
   get isSuppressed() {
     return this._isSuppressed;

@@ -15,7 +15,7 @@ export default class Passmark {
 
   /**
    * Returns whether the passmark is required
-   * @returns {Boolean}
+   * @returns {boolean}
    */
   get isEnabled() {
     return this._isEnabled;
@@ -23,7 +23,7 @@ export default class Passmark {
 
   /**
    * Returns whether the subsets need to be passed
-   * @returns {Boolean}
+   * @returns {boolean}
    */
   get requiresPassedSubsets() {
     return this._requiresPassedSubsets;
@@ -31,7 +31,7 @@ export default class Passmark {
 
   /**
    * Returns the score required for passing
-   * @returns {Number}
+   * @returns {number}
    */
   get score() {
     return this._score;
@@ -39,7 +39,7 @@ export default class Passmark {
 
   /**
    * Returns the correctness required for passing
-   * @returns {Number}
+   * @returns {number}
    */
   get correctness() {
     return this._correctness;
@@ -47,7 +47,7 @@ export default class Passmark {
 
   /**
    * Returns whether the `score` is to be used as a percentage
-   * @returns {Boolean}
+   * @returns {boolean}
    */
   get isScaled() {
     return this._isScaled;

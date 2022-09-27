@@ -14,36 +14,41 @@ const defaultConfig = {
     _isEnabled: true,
     _requirePassedSubsets: true,
     _score: 75,
-    _correct: 50,
+    _correctness: 50,
     _isScaled: true
-  }
+  },
+  _isBackwardCompatible: true
 };
 
 export default class TestsSet extends ScoringSet {
 
   initialize(options = {}, subsetParent = null) {
-    this._initConfig();
-    this.setupBackwardsCompatility();
+    this._isBackwardCompatible = options._isBackwardCompatible ?? true;
+    this._config = Adapt.course.get('_tests') ?? defaultConfig;
+    this._passmark = new Passmark(this._config._passmark);
+    this._setupBackwardsCompatility();
     super.initialize({
       ...options,
       _id: 'tests',
-      _type: 'tests'
+      _type: 'tests',
+      _isContainer: true
     }, subsetParent);
   }
 
-  setupBackwardsCompatility() {
+  _setupBackwardsCompatility() {
+    if (!this._isBackwardCompatible) return;
     Adapt.assessment = {
       get: id => {
-        const set = this.getById(id) || this.getByModelId(id);
+        const set = this.getById(id) || this.getByModelId(id)[0];
         return set?.model;
       },
       getState: () => {
-        return this.compatibilityState;
+        return this._compatibilityState;
       }
     };
   }
 
-  get compatibilityState() {
+  get _compatibilityState() {
     const state = {
       isComplete: this.isComplete,
       isPercentageBased: this.passmark.isScaled,
@@ -57,32 +62,23 @@ export default class TestsSet extends ScoringSet {
       correctAsPercent: this.scaledCorrectness,
       correctToPass: this.passmark.correctness,
       questionCount: this.questions.length,
-      assessmentsComplete: this.models,
-      assessments: this.models,
-      canRetry: null
+      assessmentsComplete: this.subsets.reduce((count, testSet) => (count += testSet.isComplete ? 1 : 0), 0),
+      assessments: this.subsets.length,
+      canRetry: this.canRetry
     };
     return state;
-  }
-
-  /**
-   * @private
-   * @todo `_tests` rather than `assessment`
-   */
-  _initConfig() {
-    this._config = Adapt.course.get('_tests') ?? defaultConfig;
-    this._passmark = new Passmark(this._config._passmark);
   }
 
   /**
    * @override
    */
   restore() {
-    Adapt.trigger('assessment:restored', this.compatibilityState);
+    if (this._isBackwardCompatible) Adapt.trigger('assessment:restored', this._compatibilityState);
     Adapt.trigger('tests:restored', this);
   }
 
   /**
-   * @extends
+   * @override
    */
   update() {
     Logging.debug(`${this.id} minScore: ${this.minScore}, maxScore: ${this.maxScore}`);
@@ -93,35 +89,33 @@ export default class TestsSet extends ScoringSet {
 
   /**
    * Reset all subsets
-   * @todo Trigger an event to say all tests have been reset?
    */
   reset() {
     this.subsets.forEach(set => set.reset());
+    Adapt.trigger('tests:reset', this);
   }
 
   /**
    * Returns whether a specified model is included within this set
    * @param {Backbone.Model} model
-   * @returns {Boolean}
+   * @returns {boolean}
    */
   getModelHasTest(model) {
     return hasIntersectingHierarchy([model], this.models);
-    // return this.subsets.find(set => set.model === model);
   }
 
   /**
    * Returns an test associated with a specified model id
-   * @todo If more than one associated test it will return the first found
-   * @param {String} id
-   * @returns {TestSet}
+   * @param {string} id
+   * @returns {Array<TestSet>}
    */
   getByModelId(id) {
-    return getSubsetsByModelId(id).find(set => set.type === 'test');
+    return getSubsetsByModelId(id).filter(set => set.type === 'test');
   }
 
   /**
    * Returns the test with the specified id
-   * @param {String} id
+   * @param {string} id
    * @returns {TestSet}
    */
   getById(id) {
@@ -139,7 +133,6 @@ export default class TestsSet extends ScoringSet {
       if (!items) return models;
       return models.concat(items);
     }, []);
-
     return this.filterModels(models);
   }
 
@@ -153,55 +146,17 @@ export default class TestsSet extends ScoringSet {
 
   /**
    * Returns whether all models have been added
-   * @returns {Boolean}
+   * @returns {boolean}
    */
-  get isAllModelsAdded() {
-    return this.subsets.find(set => !set.isAllModelsAdded);
-  }
-
-  /**
-   * Returns all `_isAvailable` component models
-   * @todo '_isAvailable' isn't inherited so unavailable blocks won't mean unavailable children and vice versa
-   * @returns {[ComponentModel]}
-   */
-  get components() {
-    return this.subsets.reduce((models, set) => models.concat(set.components), []);
-  }
-
-  /**
-   * Returns all `_isAvailable` question models
-   * @returns {[QuestionModel]}
-   */
-  get questions() {
-    return this.components.filter(model => model.get('_isQuestionType'));
-    // return this.components.filter(model => model.getTypeGroup('question'));
-    // return this.model.findDescendantModels('question').filter(model => model.get('_isAvailable'));
-  }
-
-  /**
-   * @todo Return questions so scoringSets can always be used in queries?
-   * @todo If using buckets it isn't limited to questions
-   * @todo Not actually a set - is this confusing?
-   * @override
-   * @borrows questions as scoringSets
-   * @returns {[QuestionModel]}
-   */
-  get scoringSets() {
-    return this.subsets.reduce((models, set) => models.concat(set.scoringSets), []);
-  }
-
-  /**
-   * @todo Not actually a set - is this confusing?
-   */
-  get nonScoringSets() {
-    return this.subsets.reduce((models, set) => models.concat(set.nonScoringSets), []);
+  get isAwaitingChildren() {
+    return this.subsets.find(set => set.isAwaitingChildren);
   }
 
   /**
    * @override
    */
   get minScore() {
-    return 0;
+    return this.subsets.reduce((score, set) => score + set.miScore, 0);
   }
 
   /**
@@ -220,7 +175,7 @@ export default class TestsSet extends ScoringSet {
 
   /**
    * Returns the number of correctly answered questions
-   * @returns {Number}
+   * @returns {number}
    */
   get correctness() {
     return this.subsets.reduce((count, set) => count + set.correctness, 0);
@@ -228,21 +183,11 @@ export default class TestsSet extends ScoringSet {
 
   /**
    * Returns the percentage of correctly answered questions
-   * @returns {Number}
+   * @returns {number}
    */
   get scaledCorrectness() {
     const questionCount = this.subsets.reduce((count, set) => count + set.questions.length, 0);
     return getScaledScoreFromMinMax(this.correctness, 0, questionCount);
-  }
-
-  /**
-   * Returns the score of each populated subset
-   * @returns {Object}
-   */
-  get scores() {
-    const scores = {};
-    this.scoringSets.forEach(set => (scores[set.id] = set.score));
-    return scores;
   }
 
   /**
@@ -254,29 +199,37 @@ export default class TestsSet extends ScoringSet {
   }
 
   /**
-   * Returns whether the test can be reset
-   * @returns {Boolean}
+   * Returns whether any TestModel can be reset
+   * @returns {boolean}
    */
   get canReset() {
-    const config = this.isPassed ? this.resetConfig.passedConfig : this.resetConfig.failedConfig;
-    return this.isComplete && this.attempts.hasRemaining && config._canReset;
+    return this.subsets.some(model => model.canReset);
+  }
+
+  /**
+   * Returns whether any TestModel is failed and can be retried
+   * @returns {boolean}
+   */
+  get canRetry() {
+    return this.subsets.some(model => model.canRetry);
   }
 
   /**
    * Returns whether all subsets have been completed
+   * If _passmark._requirePassedSubsets then all subsets have to be passed
    * @override
-   * @returns {Boolean}
+   * @returns {boolean}
    */
   get isComplete() {
-    return !(this.subsets.find(set => !set.isComplete));
+    return this.subsets.every(set => set.isComplete && (!this.passmark.requiresPassedSubsets || set.isPassed));
   }
 
   /**
    * Returns whether all subsets have been completed
-   * @returns {Boolean}
+   * @returns {boolean}
    */
   get isPassed() {
-    return !(this.subsets.find(set => !set.isPassed));
+    return this.subsets.every(set => set.isPassed);
   }
 
   /**
@@ -285,7 +238,7 @@ export default class TestsSet extends ScoringSet {
    * @property {AssessmentsSet}
    */
   onCompleted() {
-    Adapt.trigger('assessment:complete', this.compatibilityState);
+    if (this._isBackwardCompatible) Adapt.trigger('assessment:complete', this._compatibilityState);
     Adapt.trigger('tests:complete', this);
   }
 
@@ -296,7 +249,7 @@ export default class TestsSet extends ScoringSet {
    */
   onPassed() {
     Adapt.trigger('tests:pass', this);
-    Logging.debug('assessments passed');
+    Logging.debug('tests passed');
   }
 
 }

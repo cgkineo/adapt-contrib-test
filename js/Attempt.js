@@ -1,3 +1,5 @@
+import data from 'core/js/data';
+
 export default class Attempt {
 
   /**
@@ -18,9 +20,9 @@ export default class Attempt {
   }
 
   /**
-   * Update the attempt
+   * Update the attempt scores
    */
-  update() {
+  updateScore() {
     this._minScore = this._test.minScore;
     this._maxScore = this._test.maxScore;
     this._score = this._test.score;
@@ -31,24 +33,30 @@ export default class Attempt {
    * End the attempt
    */
   end() {
-    this._isInProgress = false;
-    this._isComplete = true;
     this._isPassed = this._test.isPassed;
+    this._isComplete = true;
+    this._isInProgress = false;
   }
 
   /**
    * Restore attempt from previous session
-   * @todo Should scores only be saved/restored for completed attempts?
    * @param {Array} data
    */
   restore(data) {
-    this._isInProgress = (data[0] === 1);
-    this._minScore = data[1];
-    this._maxScore = data[2];
-    this._score = data[3];
-    this._correctness = data[4];
-    this._isComplete = (data[5] === 1);
-    this._isPassed = (data[6] === 1);
+    const attemptData = data[0];
+    this._questionTrackingPositions = data[1];
+    this._isInProgress = (attemptData[0] === 1);
+    this._minScore = attemptData[1];
+    this._maxScore = attemptData[2];
+    this._score = attemptData[3];
+    this._correctness = attemptData[4];
+    this._isComplete = (attemptData[5] === 1);
+    this._isPassed = (attemptData[6] === 1);
+  }
+
+  get questions() {
+    const questionTrackingPositions = this._questionTrackingPositions || this._test.questions.map(question => question.trackingPosition);
+    return questionTrackingPositions.map(trackingPosition => data.findByTrackingPosition(trackingPosition));
   }
 
   /**
@@ -66,7 +74,7 @@ export default class Attempt {
 
   /**
    * Returns whether the attempt is in session
-   * @returns {Boolean}
+   * @returns {boolean}
    */
   get isInSession() {
     return this._isInSession;
@@ -74,7 +82,7 @@ export default class Attempt {
 
   /**
    * Set whether the attempt is in session
-   * @param {Boolean} value
+   * @param {boolean} value
    */
   set isInSession(value) {
     this._isInSession = value;
@@ -82,7 +90,7 @@ export default class Attempt {
 
   /**
    * Returns whether the attempt is in progress
-   * @returns {Boolean}
+   * @returns {boolean}
    */
   get isInProgress() {
     return this._isInProgress;
@@ -90,7 +98,7 @@ export default class Attempt {
 
   /**
    * Returns the minimum score
-   * @returns {Number}
+   * @returns {number}
    */
   get minScore() {
     return this._minScore;
@@ -98,7 +106,7 @@ export default class Attempt {
 
   /**
    * Returns the maximum score
-   * @returns {Number}
+   * @returns {number}
    */
   get maxScore() {
     return this._maxScore;
@@ -106,7 +114,7 @@ export default class Attempt {
 
   /**
    * Returns the score
-   * @returns {Number}
+   * @returns {number}
    */
   get score() {
     return this._score;
@@ -114,7 +122,7 @@ export default class Attempt {
 
   /**
    * Returns the number of correctly answered questions
-   * @returns {Number}
+   * @returns {number}
    */
   get correctness() {
     return this._correctness;
@@ -122,7 +130,7 @@ export default class Attempt {
 
   /**
    * Returns whether the attempt is completed
-   * @returns {Boolean}
+   * @returns {boolean}
    */
   get isComplete() {
     return this._isComplete;
@@ -130,7 +138,7 @@ export default class Attempt {
 
   /**
    * Returns whether the attempt is passed
-   * @returns {Boolean}
+   * @returns {boolean}
    */
   get isPassed() {
     return this._isPassed;
@@ -138,18 +146,21 @@ export default class Attempt {
 
   /**
    * Returns the state to save to offlineStorage
-   * @todo Should the associated trackingIds/questions be saved in case we want to know which models were used?
    * @returns {Array}
    */
   get saveState() {
+    this._questionTrackingPositions = this._test.questions.map(question => question.trackingPosition);
     return [
-      this.isInProgress ? 1 : 0,
-      this.minScore,
-      this.maxScore,
-      this.score,
-      this.correctness,
-      this.isComplete ? 1 : 0,
-      this.isPassed ? 1 : 0
+      [
+        this.isInProgress ? 1 : 0,
+        this.minScore,
+        this.maxScore,
+        this.score,
+        this.correctness,
+        this.isComplete ? 1 : 0,
+        this.isPassed ? 1 : 0
+      ],
+      this._questionTrackingPositions
     ];
   }
 
