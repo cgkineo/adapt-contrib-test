@@ -145,10 +145,7 @@ export default class Attempts {
   }
 
   get wasComplete() {
-    const isPassed = this.keepPassed
-      ? this.history.some(attempt => attempt.isComplete)
-      : this.last?.isPassed;
-    return isPassed ?? false;
+    return this.last?.isComplete;
   }
 
   get minScore() {
