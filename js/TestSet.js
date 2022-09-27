@@ -261,16 +261,6 @@ export default class TestSet extends ScoringSet {
   }
 
   /**
-   * Returns the score of each populated subset
-   * @returns {Object}
-   */
-  get scores() {
-    const scores = {};
-    this.subsets.forEach(set => (scores[set.id] = set.score));
-    return scores;
-  }
-
-  /**
    * Returns the passmark model
    * @returns {Passmark}
    */
@@ -308,14 +298,6 @@ export default class TestSet extends ScoringSet {
    */
   get resetConfig() {
     return this._resetConfig;
-  }
-
-  /**
-   * Returns the retry model
-   * @returns {Retry}
-   */
-  get retryConfig() {
-    return this._retryConfig;
   }
 
   /**
