@@ -39,7 +39,7 @@
   "_attempts": {
     "_limit": "infinite",
     "_shouldStoreAttempts": false,
-    "_keepPass": true,
+    "_keepPassed": true,
     "_keepHighestScore": true
   },
   "_questions": {
