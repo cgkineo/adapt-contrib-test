@@ -54,9 +54,7 @@ export default class TestSet extends ScoringSet {
     Object.defineProperty(assessmentMock, '_isResetOnRevisit', {
       get: () => {
         // Allow this value to change, providing compatibility for assessmentResults
-        return this.isPassed
-          ? this.resetConfig.passedConfig._isResetOnRevisit
-          : this.resetConfig.failedConfig._isResetOnRevisit;
+        return this.shouldResetOnRevisit;
       }
     });
     this.model.set('_assessment', assessmentMock);
@@ -384,13 +382,13 @@ export default class TestSet extends ScoringSet {
     ];
   }
 
+  /**
+   * @todo component/block data required to restore which models were used across sessions when banking not used? Not needed for restoring correctness as before. Needed for role selectors?
+   * @todo Have been cases where saving the scores etc was useful for amending issues with user data in xAPI.
+   * @todo `score` and `correctness` needed if treating "soft" reset tests as completed. Could we use question attempts model for restoration instead - would only work if questions can't be reset in component view, so aligns with assessment attempts?
+   * @todo Need `minScore` and `maxScore` if using banking?
+   */
   save() {
-    /**
-     * @todo component/block data required to restore which models were used across sessions when banking not used? Not needed for restoring correctness as before. Needed for role selectors?
-     * @todo Have been cases where saving the scores etc was useful for amending issues with user data in xAPI.
-     * @todo `score` and `correctness` needed if treating "soft" reset tests as completed. Could we use question attempts model for restoration instead - would only work if questions can't be reset in component view, so aligns with assessment attempts?
-     * @todo Need `minScore` and `maxScore` if using banking?
-     */
     const data = OfflineStorage.get(saveStateName) ?? {};
     data[this.id] = OfflineStorage.serialize(this.saveState);
     OfflineStorage.set(saveStateName, data);

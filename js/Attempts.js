@@ -30,6 +30,7 @@ export default class Attempts {
    */
   record(attempt) {
     if (!this._shouldStoreAttempts) {
+      // Keep just the last attempt carrying forward passed and highest score as necessary
       const last = this.last;
       const highest = this.highestScored;
       if (this.keepPassed) attempt._isPassed = last?.isPassed || attempt.isPassed;
