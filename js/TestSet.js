@@ -28,8 +28,11 @@ export default class TestSet extends ScoringSet {
     this._attempt = new Attempt(this);
     this._attempts = new Attempts(this._config._attempts, this);
     this._hasReset = false;
-    this._overrideQuestionConfiguration();
-    this._setupBackwardsCompatility();
+
+    if (!this.subsetParent) {
+      this._overrideQuestionConfiguration();
+      this._setupBackwardsCompatility();
+    }
     super.initialize({
       ...options,
       _id: this._config._id,
@@ -72,8 +75,8 @@ export default class TestSet extends ScoringSet {
       scoreToPass: this.passmark.score,
       score: this.score,
       scoreAsPercent: this.scaledScore,
-      maxScore: this.minScore,
-      minScore: this.maxScore,
+      minScore: this.minScore,
+      maxScore: this.maxScore,
       correctCount: this.correctness,
       correctAsPercent: this.scaledCorrectness,
       correctToPass: this.passmark.correctness,

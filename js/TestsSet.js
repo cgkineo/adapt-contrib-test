@@ -1,7 +1,7 @@
 import Adapt from 'core/js/adapt';
 import Logging from 'core/js/logging';
-import ScoringSet from 'extensions/adapt-contrib-scoring/js/ScoringSet';
 import Passmark from './Passmark';
+import ScoringSet from 'extensions/adapt-contrib-scoring/js/ScoringSet';
 import {
   hasIntersectingHierarchy,
   getSubsetsByType,
@@ -26,7 +26,9 @@ export default class TestsSet extends ScoringSet {
     this._isBackwardCompatible = options._isBackwardCompatible ?? true;
     this._config = Adapt.course.get('_tests') ?? defaultConfig;
     this._passmark = new Passmark(this._config._passmark);
-    this._setupBackwardsCompatility();
+    if (!subsetParent) {
+      this._setupBackwardsCompatility();
+    }
     super.initialize({
       ...options,
       _id: 'tests',
